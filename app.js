@@ -8,8 +8,10 @@ import BigNumber from "bignumber.js";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import * as deficliqStakingContractData from './stakingContractData/deficliqStakingData.json';
 import * as iercAbi from './stakingContractData/ierc20Abi.json';
+import { Button } from "bootstrap";
 
 var NATIVE_TOKEN_DECIMALS = 18; //change this
+var CLIQ_TOKEN_DECIMALS = 18;
 var NATIVE_TOKEN_NAME = 'CLIQ';
 
 var w3;
@@ -25,6 +27,8 @@ var tokenContractAddress;
 var cliqContractAddress;
 var nativeTokenContract;
 var cliqContract;
+var packageLength;
+var stakesLength;
 
 
 const w3Strings= {
@@ -71,9 +75,16 @@ function fromContractDecimals(amount, dec){
     return amount;
 }
 
+var initVal=setInterval(function(){
+    if(!ethereum.chainId) return;
+    else init();
+},500);
+
 async function init(){
         
-        console.log(ethereum);
+        clearInterval(initVal);
+
+        console.log(ethereum,ethereum.chainId);
         w3= await new Web3(w3Strings[ethereum.chainId].infuraLink);
 
         setStakeInterface();
@@ -101,15 +112,17 @@ async function init(){
             $('.log-metamask').hide();
         }
     
-        $('#stake-button-text').text('Choose Provider');
+        checkButtonState();
+
+        $('.focus-input100.amount').attr('data-placeholder',"Stake Amount ("+NATIVE_TOKEN_NAME+")");
+
     
-   
 }
 
 
 async function setStakeInterface(){
     var readContract=new w3.eth.Contract(deficliqStakingContractData.abi, deficliqStakingContractData.address);
-    var packageLength = await readContract.methods.packageLength().call();
+    packageLength = await readContract.methods.packageLength().call();
     
     var html='<option></option>';
 
@@ -135,6 +148,79 @@ async function web3Loaded(){
     nativeTokenContract=new w3sender.eth.Contract(iercAbi.abi, tokenContractAddress);
     cliqContract=new w3sender.eth.Contract(iercAbi.abi, cliqContractAddress);
 
+    updateInterface();
+
+}
+
+
+function getBestPackage(){
+    var max=0;
+    var bestPackage=null;
+    for(var pKey in stakePackages){
+        if(parseFloat(stakePackages[pKey]._packageInterest) > max){
+            max=parseFloat(stakePackages[pKey]._packageInterest);
+            bestPackage=stakePackages[pKey];
+        }
+    }
+    return bestPackage;
+}
+
+async function setTokenBalance(){
+
+    var stakesLength = await stakingContract.methods.stakesLength(user.address).call();
+    if(!stakes.length || stakes.length < stakesLength){
+        setTimeout(setTokenBalance,500);
+        return;
+    }
+
+    try{
+    user.tokenBalance=fromContractDecimals((await nativeTokenContract.methods.balanceOf(user.address).call()),NATIVE_TOKEN_DECIMALS);
+    }catch(e){
+        user.tokenBalance=0;
+    }
+    $('.max-amount-tokens').show();
+    $('.max-amount-tokens-text').text(user.tokenBalance.toFixed(5)+" "+NATIVE_TOKEN_NAME);
+
+    user.totalStakedBalance = parseFloat(fromContractDecimals((await stakingContract.methods.totalStakedBalance(user.address).call()),NATIVE_TOKEN_DECIMALS));
+    user.currentlyStakedBalance=user.totalStakedBalance;
+    user.totalRewardsToken=0;
+    user.totalRewardsCliq=0;
+    user.historicalRewardsCliq=0;
+    user.historicalRewardsToken=0;
+    
+    for(var sKey in stakes){    
+        if(!stakes[sKey].amountNormalized){
+            setTimeout(setTokenBalance,500);
+            return;
+        }
+        
+        if(stakes[sKey]._stakeRewardType==0){
+            user.historicalRewardsToken+=stakes[sKey].normalizedAccumulatedInterest;
+        }else{
+            user.historicalRewardsCliq+=stakes[sKey].normalizedAccumulatedInterest;
+        }
+
+        if(stakes[sKey]._withdrawnTimestamp==0){
+            if(stakes[sKey]._stakeRewardType==0){
+                user.totalRewardsToken+=stakes[sKey].normalizedAccumulatedInterest;
+            }else{
+                user.totalRewardsCliq+=stakes[sKey].normalizedAccumulatedInterest;
+            }
+        }
+        
+        user.currentlyStakedBalance-=stakes[sKey]._withdrawnTimestamp!=0?stakes[sKey].amountNormalized:0;
+    }
+    console.log(user.totalStakedBalance,user.currentlyStakedBalance);
+    $('.general-staked-balance').text(user.totalStakedBalance.toFixed(4)+' '+NATIVE_TOKEN_NAME);
+    $('.general-currently-staked-balance').text(user.currentlyStakedBalance.toFixed(4)+' '+NATIVE_TOKEN_NAME);
+    $('.general-interest').text(user.totalRewardsToken.toFixed(4)+' '+NATIVE_TOKEN_NAME+(user.totalRewardsCliq>0?' + '+user.totalRewardsCliq.toFixed(4)+' CLIQ':''))
+    $('.general-historical-rewards').text(user.historicalRewardsToken.toFixed(4)+' '+NATIVE_TOKEN_NAME+(user.historicalRewardsCliq>0?' + '+user.historicalRewardsCliq.toFixed(4)+' CLIQ':''));
+    
+    var bpackage=getBestPackage();
+    $('.general-best-deal').text(w3.utils.toAscii(bpackage._packageName));
+    $('.general-best-deal-reward').text(bpackage._packageInterest+'% in '+bpackage._daysLocked+' days');
+
+
 }
 
 
@@ -146,7 +232,6 @@ function setLoggedState(){
     $('.connected-panel .net-text').text(w3Strings[ethereum.chainId].name);
     $('.logged-in').show();
     $('.logged-out').hide();
-    $('#stake-button-text').text('Stake');
     logged=true;
 }
 
@@ -188,7 +273,6 @@ function installMetamask(){
 async function logWalletConnect(){
     loggedProvider='walletConnect';
     var prov=await walletConnectProvider.enable();
-    console.log(prov);
     loginWeb3(walletConnectProvider);
 
 }
@@ -213,7 +297,7 @@ function loginMetaMask(){
 var logged=false;
 
 function setNotLoggedState(){
-    console.log('qwefrqwef');
+    
     $('.logged-out').show();
     $('.logged-in').hide();
     $('#stake-button-text').text('Connect Provider');
@@ -232,11 +316,18 @@ function getState(){
     }
 }
 
+
 async function updateStakes(){
     
-    var stakesLength = await stakingContract.methods.stakesLength(user.address).call();
 
-    console.log('length:',stakesLength)
+    stakesLength = await stakingContract.methods.stakesLength(user.address).call();
+
+    if($.isEmptyObject(stakePackages) || Object.keys(stakePackages).length < packageLength){
+        setTimeout(updateStakes,500);
+        return;
+    }
+
+    stakes=[];
     for(var sKey=0; sKey<stakesLength;sKey++){
 
         var stake=await stakingContract.methods.stakes(user.address,sKey).call();
@@ -255,12 +346,15 @@ async function drawStakes(stakes){
     var historyStakesHTML='';
 
     for(var sKey in stakes){
-
         
-        stakes[sKey].accumulatedInterest = await stakingContract.methods.checkStakeReward(user.address,sKey).call();
-        stakes[sKey].normalizedAccumulatedInterest = parseFloat(fromContractDecimals(stakes[sKey].accumulatedInterest,NATIVE_TOKEN_DECIMALS));
+        if(stakes[sKey]._stakeRewardType==0){
+            stakes[sKey].accumulatedInterest = await stakingContract.methods.checkStakeReward(user.address,sKey).call();
+        }else{
+            stakes[sKey].accumulatedInterest = await stakingContract.methods.checkStakeCliqReward(user.address,sKey).call();
+        }
+        
+        stakes[sKey].normalizedAccumulatedInterest = parseFloat(fromContractDecimals(stakes[sKey].accumulatedInterest,stakes[sKey]._stakeRewardType==0?NATIVE_TOKEN_DECIMALS:CLIQ_TOKEN_DECIMALS));
         stakes[sKey].amountNormalized = parseFloat(fromContractDecimals(stakes[sKey]._amount,NATIVE_TOKEN_DECIMALS));
-
         if(stakes[sKey]._withdrawnTimestamp == 0){
 
         activeStakesHTML+=`
@@ -295,7 +389,7 @@ async function drawStakes(stakes){
         <div class="row col-xs-12" style="border-bottom: 1px solid; padding-top: 10px; padding-bottom: 10px;">
             <div class="row col-md-6">
             <div style="white-space: pre; font-size: 75%;line-height: 18px;" class="col-md-4">${moment.unix(stakes[sKey]._timestamp).format('YYYY-MM-DD HH:mm:ss')}</div>
-            <div style="white-space: pre; font-size: 75%;line-height: 18px;" class="col-md-4">${moment.unix(stakes[sKey]._timestamp).add(stakePackages[stakes[sKey]._packageName]['_daysLocked'],'days').format('YYYY-MM-DD HH:mm:ss')}</div>
+            <div style="white-space: pre; font-size: 75%;line-height: 18px;" class="col-md-4">${moment.unix(stakes[sKey]._withdrawnTimestamp).format('YYYY-MM-DD HH:mm:ss')}</div>
             <div class="col-md-2">#${sKey}</div>
             <div style="font-size: 85%;white-space:nowrap;" class="col-md-2">${stakes[sKey].amountNormalized.toFixed(4)}</div>
             </div>
@@ -328,6 +422,27 @@ async function drawStakes(stakes){
 
 }
 
+function unstake(stakeId){
+    
+    
+    //---grant role---
+    // var transaction=stakingContract.methods.grantRole("0xe56e19a7d558c827e5fe3dd17249e3d1e70e83b18ea8e11167d41e0a83cdd168",user.address).send({
+    //     from:user.address
+    // });
+
+    //-- add reward --
+    // var transaction=stakingContract.methods.addStakedTokenReward("6624209999999999929100").send({
+    //     from:user.address
+    // });
+
+    var transaction=stakingContract.methods.unstake(stakeId).send({
+        from:user.address
+    });
+    
+    startTransaction(transaction);
+    
+}
+
 function validateInputs(amount,stakingPackage,type){
     if(isNaN(amount)) return 'Please Select a valid amount';
     if(!stakingPackage) return 'Please Select a staking package';
@@ -351,20 +466,57 @@ function executeStakeAction(){
     }
 }
 
+var inTransaction=false;
+
+async function updateInterface(){
+    await updateStakes();
+    setTokenBalance();
+}
+
+function startTransaction(transaction){
+    inTransaction=true;
+    checkButtonState();
+    transaction.on('receipt',function(){
+        
+        inTransaction=false;
+        checkButtonState();
+        updateInterface();
+    }).catch(function(err){
+        //handle error of approval
+        console.warn('approval error',err);
+        inTransaction=false;
+        checkButtonState();
+        updateInterface();
+    });
+
+    setTimeout(function(){
+        inTransaction=false;
+        checkButtonState();
+        updateInterface();
+    },25000)
+
+}
+
+
+
+function getApproval(){
+    return nativeTokenContract.methods.allowance(user.address,deficliqStakingContractData.address).call();
+}
+
 async function stakeChainActions(amount,stakingPackage,type){
     
-    var approval = await nativeTokenContract.methods.allowance(user.address,deficliqStakingContractData.address).call();
-    console.log(approval);
-    if(approval <= toContractDecimals(amount,NATIVE_TOKEN_DECIMALS)){
+    var approval = await getApproval();
+    
+    if(approval <= parseFloat(toContractDecimals(amount,NATIVE_TOKEN_DECIMALS))){
+        console.log('spending start');
+        
+        
 
         var transaction = nativeTokenContract.methods.approve(deficliqStakingContractData.address,"115792089237316195423570985008687907853269984665640564039457584007913129639935").send({
             from:user.address
         });
 
-        transaction.then(function(){stakeTokens(amount,stakingPackage,type)}).catch(function(err){
-            //handle error of approval
-            console.warn('approval error',err);
-        });
+        startTransaction(transaction);
 
     }else{
         stakeTokens(amount,stakingPackage,type);
@@ -375,13 +527,63 @@ async function stakeChainActions(amount,stakingPackage,type){
 
 function stakeTokens(amount,stakingPackage,type){
 
-    stakingContract.methods.stakeTokens(toContractDecimals(amount,NATIVE_TOKEN_DECIMALS),stakingPackage,type).send({
+    var tr=stakingContract.methods.stakeTokens(toContractDecimals(amount,NATIVE_TOKEN_DECIMALS),stakingPackage,type).send({
         from:user.address
-    }).then(function(success){
-
-    }).catch(function(err){
-        console.log(err);
     });
+
+    startTransaction(tr);
+
+}
+
+async function checkButtonState(){
+    
+    var buttonText='';
+    var buttonDisabled = false;
+
+    
+
+    
+    var stakingPackage=document.getElementsByClassName('select-package')[0].value;
+    
+    if(!stakingContract){
+        buttonText='Choose Provider';
+    }
+    else{
+
+        var amount= parseFloat($('input[name="amount"]').val());
+        var approval = await getApproval();
+        console.log(approval);
+        if(amount && !isNaN(amount)){
+            if(!stakingPackage){
+                buttonDisabled = true;
+                buttonText='Choose Package';
+            }
+            else{
+                if(approval > amount){
+                buttonText='Stake';
+                }else{
+                    buttonText='Approve Spending';
+                }
+            }
+        } else{
+            buttonDisabled = true;
+            buttonText='Enter Amount';
+        }
+    }
+
+    if(inTransaction){
+        buttonText='Loading...';
+        buttonDisabled=true;
+    }
+
+    console.log(buttonText);
+
+    $('#stake-button-text').text(buttonText);
+    $('.stake-button').attr('disabled',buttonDisabled);
+    
+    buttonDisabled?$('.container-login100-form-btn').addClass('disabledBtn'):$('.container-login100-form-btn').removeClass('disabledBtn');
+    
+    inTransaction?$('.loader-5').show():$('.loader-5').hide();
 
 }
 
@@ -395,11 +597,12 @@ function loginWeb3(provider){
         console.log(network);
         w3= new Web3(w3Strings[network].infuraLink);
 
-        w3.eth.getBalance(user.address, (err, balance) => {                    
+        w3.eth.getBalance(user.address, async (err, balance) => {                    
             user.balance = w3.utils.fromWei(balance, "ether");
             setLoggedState();
-            web3Loaded();
+            await web3Loaded();
             setProviderEvents(provider);
+            checkButtonState();
         });                
     }
     else{
@@ -407,6 +610,22 @@ function loginWeb3(provider){
     }
 }
 
+function debounce(func, wait, immediate) {
+	var timeout;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+};
+
+var currentStakeId=null;
 (function () {
 
     $(document).on('click','.log-metamask',function(){
@@ -425,15 +644,34 @@ function loginWeb3(provider){
         }
     });
 
-    $(document).on('click','.refresh-active-stakes',function(){
+    var debouncedCheckButtonState=debounce(function(){console.log('checkdebounced');checkButtonState()},500);
+
+    $(document).on('keyup','input[name="amount"]',debouncedCheckButtonState);
+
+    $(document).on('change','select[name="select-package"]',debouncedCheckButtonState);
+
+    $(document).on('click','.refresh-active-stakes,.refresh-stake-button',function(){
         updateStakes();
     })
 
     $(document).on('click','.unstake-button',function(){
-        console.log($(this).attr('stake'));
+        currentStakeId = $(this).attr('stake');
+        $('.info-stake-reward').text(stakes[currentStakeId].normalizedAccumulatedInterest);
+        $('.info-stake-amount').text(stakes[currentStakeId].amountNormalized);
+        $('.info-stake-token').text(stakes[currentStakeId]._stakeRewardType == 0 ? NATIVE_TOKEN_NAME:'CLIQ');
+        $('#unstake-modal').modal('toggle');
+    })
+
+    $(document).on('click','.unstake-agree',function(){
+        unstake(currentStakeId);
     })
     
+    $(document).on('click','.max-amount-tokens',function(){
+        $('input[name="amount"').val(user.tokenBalance.toFixed(4));
+        $('input[name="amount"').focus();
+    });
 
+   
 
     $(document).on('click','.logout-provider',async function(){
         if(typeof(ethereum)!='undefined' && loggedProvider=='metamask'){
@@ -532,9 +770,5 @@ function loginWeb3(provider){
 
     });
 
-
-    $(document).ready(function(){
-       init(); 
-    });
 
 })();

@@ -71,14 +71,21 @@
                   
                 <div class="wrap-input100 validate-input" data-validate = "Invalid Amount">
                   <input class="input100" type="text" name="amount">
-                  <span class="focus-input100" data-placeholder="Stake Amount"></span>
+                  <span class="focus-input100 amount" data-placeholder="Stake Amount"></span>
+                </div>
+                <div style="margin-top: -30px;margin-bottom: 30px;">
+                  <a href="#" style="display:none;text-decoration: none;" class="max-amount-tokens">
+                    <span style="font-size:9px;color:#ff004c9e;letter-spacing: 0.5px;font-weight: 700;font-family: 'Product Sans';">
+                      Max: <span class="max-amount-tokens-text"></span> <span class="token-name"></span>
+                    </span>
+                  </a>
                 </div>
 
-                <div class="wrap-input100 validate-input" data-validate = "Invalid Contract Address">
+                <div class="wrap-input100 validate-input" data-validate = "Invalid Package">
                   <select class="input100 select-package" type="text" id="package types" name="select-package">
                     <option></option>
                   </select>
-                  <span class="focus-input100" data-placeholder="Contract Address"></span>
+                  <span class="focus-input100" data-placeholder="Staking Package"></span>
                 </div>  
 
 
@@ -86,7 +93,7 @@
                     <div class="wrap-login100-form-btn">
                       <div class="login100-form-bgbtn"></div>
                       <button class="login100-form-btn stake-button">
-                       <span id="stake-button-text">Stake</span>
+                       <span id="stake-button-text">Choose Provider</span><div class="loader-5" style="display: none;"></div>
                       </button>
                     </div>
                   </div>
@@ -98,26 +105,30 @@
                 <img src="diamond.png"  class="diamond-icon" />
                 <div>
                   <div class="row" style="margin-top: 10%; margin-bottom: 2%;">
-                      <div class="col-7">Your staked balance</div>
-                      <div class="col-5" style="font-size: 24px; font-weight: 500;"> 0 CLIQ</div>    
+                      <div class="col-7" style="font-size:15px;">Total staked tokens</div>
+                      <div class="col-5" style="font-size: 16px; font-weight: 500;"><span  class="general-currently-staked-balance"> 0 CLIQ</span></div>    
                   </div>
                   <div class="row" style="margin-bottom:2%;">
-                      <div class="col-7">Rewards if un-staked today</div>
-                      <div class="col-5" style="font-size: 24px; font-weight: 500;"> 0 CLIQ</div>    
+                      <div class="col-7" style="font-size:15px;">Accumulated Interest</div>
+                      <div class="col-5" style="font-size: 16px; font-weight: 500;" ><span class="general-interest"> 0 CLIQ</span></div>    
                   </div>
                   <div class="row" style="margin-bottom:2%;">
-                      <div class="col-7">Rewards at maturity</div>
-                      <div class="col-5" style="font-size: 24px; font-weight: 500;"> 0 CLIQ</div>    
+                    <div class="col-7" style="font-size:15px;">All time staked</div>
+                    <div class="col-5" style="font-size: 16px; font-weight: 500;" ><span class="general-staked-balance"> 0 CLIQ</span></div>    
+                </div>
+                  <div class="row" style="margin-bottom:2%;">
+                      <div class="col-7" style="font-size:15px;">Historical Rewards</div>
+                      <div class="col-5" style="font-size: 16px; font-weight: 500;"><span class="general-historical-rewards"> 0 CLIQ</span></div>    
                   </div>
                   <div class="row" style="margin-bottom:2%;">
-                      <div class="col-7">Early withdraw starts</div>
-                      <div class="col-5" style="font-weight: 500;">1/3/2021 4:59:59 PM</div>    
+                      <div class="col-7" style="font-size:15px;">Best deal</div>
+                      <div class="col-5" style="font-size:16px;font-weight: 500;color:#ff004c9e" ><span class="general-best-deal"></span></div>    
                   </div>
                   <div class="row" style="margin-bottom:2%;">
-                      <div class="col-7">Maturity</div>
-                      <div class="col-5" style="font-weight: 500;">1/3/2021 5:00:00 PM</div>    
+                      <div class="col-7" style="font-size:15px;">Best Deal Reward</div>
+                      <div class="col-5" style="font-size:16px;font-weight: 500;color:#ff004c9e"><span class="general-best-deal-reward"></span></div>    
                   </div>
-                  <p class="text-center" style="font-size: 24px; margin-top:50px; font-weight: 500; padding-bottom: 20px;">0 months 20 days 2 hours to maturity</p>
+                  <!-- <p class="text-center" style="font-size: 16px; margin-top:50px; font-weight: 500; padding-bottom: 20px;">0 months 20 days 2 hours to maturity</p> -->
                 </div>
               </div>
         </div>
@@ -177,12 +188,12 @@
                   <div class="col-md-4">Start</div>
                   <div class="col-md-4">End</div>
                   <div class="col-md-2">Staked ID</div>
-                  <div class="col-md-2">Staked Amount</div>
+                  <div class="col-md-2">Initial Amount</div>
                 </div>
                 <div class="row col-md-6">
                   <div class="col-md-3">Stake Reward</div>
                   <div class="col-md-3">Interest</div>
-                  <div class="col-md-3">Current Val.</div>
+                  <div class="col-md-3">Unstaked Val.</div>
                   <div class="col-md-3">Action</div>
                 </div>
               </div>
@@ -273,16 +284,21 @@
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="unstake-modal-title">Provider</h5>
+              <h5 class="modal-title" id="unstake-modal-title">Unstake</h5>
               <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">✖️</button>
             </div>
             <div class="modal-body">
-              Would you like to log out your provider?<br>
-              Logged in as: <span class="address-full"></span>
+              Are you sure you want to unstake?<br>
+              <br/>
+              Received Reward: <span class="info-stake-reward"></span> <span class="info-stake-token"></span>
+              <br/>
+              Received Principal: <span class="info-stake-amount"></span> <span class="info-stake-token"></span>
+              <br/>
+
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-secondary logout-provider" data-dismiss="modal">Log Out</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>     
+                <button type="button" class="btn btn-secondary unstake-agree" data-dismiss="modal">Yes</button>              
             </div>
           </div>
         </div>
