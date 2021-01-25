@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $, { type } from "jquery";
 import 'bootstrap';
 import moment from "moment";
 import MetaMaskOnboarding from '@metamask/onboarding';
@@ -13,6 +13,7 @@ import { Button } from "bootstrap";
 var NATIVE_TOKEN_DECIMALS = 18; //change this
 var CLIQ_TOKEN_DECIMALS = 18;
 var NATIVE_TOKEN_NAME = 'CLIQ';
+var FALLBACK_CHAIN='0x4';
 
 var w3;
 var loggedProvider;
@@ -75,8 +76,10 @@ function fromContractDecimals(amount, dec){
     return amount;
 }
 
+
 var initVal=setInterval(function(){
-    if(!ethereum.chainId) return;
+    
+    if(typeof(ethereum)!='undefined' && !ethereum.chainId){ return;}
     else init();
 },500);
 
@@ -84,13 +87,13 @@ async function init(){
         
         clearInterval(initVal);
 
-        console.log(ethereum,ethereum.chainId);
-        w3= await new Web3(w3Strings[ethereum.chainId].infuraLink);
+        network=(typeof(ethereum)!='undefined' && ethereum.chainId)?ethereum.chainId:FALLBACK_CHAIN;
+
+        w3= await new Web3(w3Strings[network].infuraLink);
 
         setStakeInterface();
 
-        console.log(localStorage.getItem('checkMetamaskLogin'));
-        if (typeof ethereum !== 'undefined' && localStorage.getItem('checkMetamaskLogin') == 1) {
+        if (typeof(ethereum) !== 'undefined' && localStorage.getItem('checkMetamaskLogin') == 1) {
         
             
     
@@ -229,7 +232,7 @@ function setLoggedState(){
     $('.address-panel').text(user.address.substr(0,11)+'...');
     $('.address-full').text(user.address);
     $('.balance-panel').text((Math.floor(user.balance*1000)/1000) + ' ETH');
-    $('.connected-panel .net-text').text(w3Strings[ethereum.chainId].name);
+    $('.connected-panel .net-text').text(w3Strings[network].name);
     $('.logged-in').show();
     $('.logged-out').hide();
     logged=true;

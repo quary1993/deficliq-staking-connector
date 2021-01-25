@@ -43,8 +43,8 @@
                 <span class="nav-link">STAKING OPTIONS</span>
               </span>
             </div>
-            <span class="navbar-text logged-out" style="display: none;cursor:pointer;" data-toggle="modal" data-target="#exampleModal">
-              <span style="color:white;padding-left:10px;padding-right:10px;" type="button" >CONNECT 🔗</span>
+            <span class="navbar-text logged-out" style="display: none;cursor:pointer;" data-toggle="modal" data-target="#provider-modal">
+              <span style="color:white;padding-left:10px;padding-right:10px;" >CONNECT 🔗</span>
             </span>
             <span data-toggle="modal" data-target="#logoutmodal" class="navbar-text logged-in" style="display:none;cursor: pointer; border-radius: 12px;">
               
@@ -66,39 +66,39 @@
       <div class="row col-xs-12" style="margin:0px;">
         <div class="col-md-4" style="padding-left: 25px;">
         <div class="col-md-12 metal-container" style="padding-top: 36px;">
-                <img class="logo_img" style="max-width:100%; width:250px; margin-bottom: 25px; margin-top: 20px;" src="https://i.imgur.com/f8VDgKc.png" style="max-width:150px;" alt="Logo">
+          <img class="logo_img" style="max-width:100%; width:250px; margin-bottom: 25px; margin-top: 20px;" src="https://i.imgur.com/f8VDgKc.png" style="max-width:150px;" alt="Logo">
                 
                   
-                <div class="wrap-input100 validate-input" data-validate = "Invalid Amount">
-                  <input class="input100" type="text" name="amount">
-                  <span class="focus-input100 amount" data-placeholder="Stake Amount"></span>
-                </div>
-                <div style="margin-top: -30px;margin-bottom: 30px;">
-                  <a href="#" style="display:none;text-decoration: none;" class="max-amount-tokens">
-                    <span style="font-size:9px;color:#ff004c9e;letter-spacing: 0.5px;font-weight: 700;font-family: 'Product Sans';">
-                      Max: <span class="max-amount-tokens-text"></span> <span class="token-name"></span>
-                    </span>
-                  </a>
-                </div>
+          <div class="wrap-input100 validate-input" data-validate = "Invalid Amount">
+            <input class="input100" type="text" name="amount">
+            <span class="focus-input100 amount" data-placeholder="Stake Amount"></span>
+          </div>
+          <div style="margin-top: -30px;margin-bottom: 30px;">
+            <a href="#" style="display:none;text-decoration: none;" class="max-amount-tokens">
+              <span style="font-size:9px;color:#ff004c9e;letter-spacing: 0.5px;font-weight: 700;font-family: 'Product Sans';">
+                Max: <span class="max-amount-tokens-text"></span> <span class="token-name"></span>
+              </span>
+            </a>
+          </div>
 
-                <div class="wrap-input100 validate-input" data-validate = "Invalid Package">
-                  <select class="input100 select-package" type="text" id="package types" name="select-package">
-                    <option></option>
-                  </select>
-                  <span class="focus-input100" data-placeholder="Staking Package"></span>
-                </div>  
+          <div class="wrap-input100 validate-input" data-validate = "Invalid Package">
+            <select class="input100 select-package" type="text" id="package types" name="select-package">
+              <option></option>
+            </select>
+            <span class="focus-input100" data-placeholder="Staking Package"></span>
+          </div>  
 
 
-                  <div class="container-login100-form-btn" style="padding-bottom: 20px;">
-                    <div class="wrap-login100-form-btn">
-                      <div class="login100-form-bgbtn"></div>
-                      <button class="login100-form-btn stake-button">
-                       <span id="stake-button-text">Choose Provider</span><div class="loader-5" style="display: none;"></div>
-                      </button>
-                    </div>
-                  </div>
+            <div class="container-login100-form-btn" style="padding-bottom: 20px;">
+              <div class="wrap-login100-form-btn">
+                <div class="login100-form-bgbtn"></div>
+                <button class="login100-form-btn stake-button">
+                  <span id="stake-button-text">Choose Provider</span><div class="loader-5" style="display: none;"></div>
+                </button>
+              </div>
+            </div>
 
-               </div>
+        </div>
 
         
         <div class="col-md-12 metal-container" style="margin-top: 14px; padding-top:16px; padding-bottom: 16px;">
