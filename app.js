@@ -185,6 +185,7 @@ async function setTokenBalance(){
     $('.max-amount-tokens-text').text(user.tokenBalance.toFixed(5)+" "+NATIVE_TOKEN_NAME);
 
     user.totalStakedBalance = parseFloat(fromContractDecimals((await stakingContract.methods.totalStakedBalance(user.address).call()),NATIVE_TOKEN_DECIMALS));
+    
     user.currentlyStakedBalance=user.totalStakedBalance;
     user.totalRewardsToken=0;
     user.totalRewardsCliq=0;
@@ -211,7 +212,8 @@ async function setTokenBalance(){
             }
         }
         
-        user.currentlyStakedBalance-=stakes[sKey]._withdrawnTimestamp!=0?stakes[sKey].amountNormalized:0;
+          user.totalStakedBalance+=stakes[sKey]._withdrawnTimestamp!=0?stakes[sKey].amountNormalized:0;
+        //user.currentlyStakedBalance-=stakes[sKey]._withdrawnTimestamp!=0?stakes[sKey].amountNormalized:0;
     }
     console.log(user.totalStakedBalance,user.currentlyStakedBalance);
     $('.general-staked-balance').text(user.totalStakedBalance.toFixed(4)+' '+NATIVE_TOKEN_NAME);
@@ -284,7 +286,7 @@ function loginMetaMask(){
     
     if (typeof ethereum == 'undefined') {installMetamask();return;}
 
-    ethereum.send('eth_requestAccounts').then(function(e){
+    ethereum.request({method:'eth_requestAccounts'}).then(function(e){
         localStorage.setItem('checkMetamaskLogin',1);
         loggedProvider='metamask';
         loginWeb3(ethereum);
@@ -350,11 +352,16 @@ async function drawStakes(stakes){
 
     for(var sKey in stakes){
         
-        if(stakes[sKey]._stakeRewardType==0){
-            stakes[sKey].accumulatedInterest = await stakingContract.methods.checkStakeReward(user.address,sKey).call();
+        
+        
+        if(stakes[sKey]._stakeRewardType==0){        
+            var stakeRewardToken = await stakingContract.methods.checkStakeReward(user.address,sKey).call();
+            stakes[sKey].accumulatedInterest = stakeRewardToken.yieldReward;
         }else{
-            stakes[sKey].accumulatedInterest = await stakingContract.methods.checkStakeCliqReward(user.address,sKey).call();
+            var stakeRewardCliq =  await stakingContract.methods.checkStakeCliqReward(user.address,sKey).call();
+            stakes[sKey].accumulatedInterest = stakeRewardCliq.yieldReward;
         }
+
         
         stakes[sKey].normalizedAccumulatedInterest = parseFloat(fromContractDecimals(stakes[sKey].accumulatedInterest,stakes[sKey]._stakeRewardType==0?NATIVE_TOKEN_DECIMALS:CLIQ_TOKEN_DECIMALS));
         stakes[sKey].amountNormalized = parseFloat(fromContractDecimals(stakes[sKey]._amount,NATIVE_TOKEN_DECIMALS));

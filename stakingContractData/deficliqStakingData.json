@@ -1,6 +1,6 @@
 {
-    "address":"0x0F4187d4d575c372f0b9B81750D005F2a2265C8b",
-    "abi":[
+    "address":"0xEa6985d6aAB6DdaD579A59FDb82d812ee4BF53b3",
+    "abi": [
       {
         "inputs": [
           {
@@ -475,12 +475,22 @@
           },
           {
             "internalType": "uint256",
+            "name": "_daysBlocked",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "_packageInterest",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
             "name": "_packageCliqReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_earlyPenalty",
             "type": "uint256"
           }
         ],
@@ -691,7 +701,12 @@
         "outputs": [
           {
             "internalType": "uint256",
-            "name": "",
+            "name": "yieldReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timeDiff",
             "type": "uint256"
           }
         ],
@@ -716,7 +731,12 @@
         "outputs": [
           {
             "internalType": "uint256",
-            "name": "",
+            "name": "yieldReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timeDiff",
             "type": "uint256"
           }
         ],
